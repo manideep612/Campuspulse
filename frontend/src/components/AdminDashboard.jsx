@@ -10,7 +10,10 @@ import {
   Search,
   Filter,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Cpu,
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ComplaintCard } from './ComplaintCard';
@@ -18,6 +21,7 @@ import { ComplaintCard } from './ComplaintCard';
 export function AdminDashboard({ onStatusUpdate, onDelete }) {
   const [stats, setStats] = useState(null);
   const [complaints, setComplaints] = useState([]);
+  const [aiMetrics, setAiMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,12 +31,14 @@ export function AdminDashboard({ onStatusUpdate, onDelete }) {
     setLoading(true);
     setError(null);
     try {
-      const [statsData, complaintsData] = await Promise.all([
-        api.getStats(),
-        api.getComplaints(),
+      const [statsData, complaintsData, metricsData] = await Promise.all([
+        api.getStats().catch(() => null),
+        api.getComplaints().catch(() => []),
+        api.getAiMetrics().catch(() => null),
       ]);
       setStats(statsData);
       setComplaints(complaintsData);
+      setAiMetrics(metricsData);
     } catch (err) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {
@@ -168,6 +174,57 @@ export function AdminDashboard({ onStatusUpdate, onDelete }) {
           </div>
         </div>
       </div>
+
+      {/* AI Model Evaluation & Performance Card */}
+      {aiMetrics && (
+        <div className="ai-metrics-card">
+          <div className="ai-metrics-header">
+            <div className="ai-metrics-title-row">
+              <div className="ai-metrics-icon">
+                <Cpu size={20} />
+              </div>
+              <div>
+                <h4 className="ai-metrics-title">Local Machine Learning Classifier Metrics</h4>
+                <p className="ai-metrics-sub">{aiMetrics.algorithm}</p>
+              </div>
+            </div>
+            <span className="ai-badge-model">80/20 Train-Test Split</span>
+          </div>
+
+          <div className="ai-metrics-grid">
+            <div className="ai-metric-box">
+              <span className="ai-metric-label">Category Test Accuracy</span>
+              <span className="ai-metric-number text-success">{aiMetrics.categoryAccuracy}%</span>
+              <span className="ai-metric-detail">Evaluated on unseen test set</span>
+            </div>
+
+            <div className="ai-metric-box">
+              <span className="ai-metric-label">Urgency Test Accuracy</span>
+              <span className="ai-metric-number text-warning">{aiMetrics.priorityAccuracy}%</span>
+              <span className="ai-metric-detail">Used as AI Recommendation</span>
+            </div>
+
+            <div className="ai-metric-box">
+              <span className="ai-metric-label">Training Dataset Size</span>
+              <span className="ai-metric-number">{aiMetrics.totalDatasetSize}</span>
+              <span className="ai-metric-detail">{aiMetrics.trainingSetSize} Train &bull; {aiMetrics.testSetSize} Test</span>
+            </div>
+
+            <div className="ai-metric-box">
+              <span className="ai-metric-label">Vocabulary Size</span>
+              <span className="ai-metric-number">{aiMetrics.vocabularySize}</span>
+              <span className="ai-metric-detail">Distinct campus n-gram terms</span>
+            </div>
+          </div>
+
+          {aiMetrics.priorityLimitationNote && (
+            <div className="ai-metrics-note">
+              <Info size={14} className="mr-1 flex-shrink-0" />
+              <span><strong>Evaluation Note:</strong> {aiMetrics.priorityLimitationNote}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Category Distribution */}
       {stats && stats.byCategory && (

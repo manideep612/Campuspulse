@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:8080/api/complaints';
+// Base API URL: uses Vite proxy in dev, or environment variable VITE_API_URL if configured
+const API_BASE = import.meta.env.VITE_API_URL || '';
+const COMPLAINTS_URL = `${API_BASE}/api/complaints`;
+const AI_URL = `${API_BASE}/api/ai`;
 
 export const api = {
   // Fetch all complaints with optional filters
@@ -9,21 +12,21 @@ export const api = {
     if (filters.search) params.append('search', filters.search);
 
     const queryString = params.toString() ? `?${params.toString()}` : '';
-    const res = await fetch(`${API_BASE_URL}${queryString}`);
+    const res = await fetch(`${COMPLAINTS_URL}${queryString}`);
     if (!res.ok) throw new Error('Failed to fetch complaints');
     return res.json();
   },
 
   // Fetch single complaint by ID
   async getComplaintById(id) {
-    const res = await fetch(`${API_BASE_URL}/${id}`);
+    const res = await fetch(`${COMPLAINTS_URL}/${id}`);
     if (!res.ok) throw new Error('Complaint not found');
     return res.json();
   },
 
   // Submit a new complaint
   async createComplaint(complaintData) {
-    const res = await fetch(API_BASE_URL, {
+    const res = await fetch(COMPLAINTS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +45,7 @@ export const api = {
 
   // Admin: Update complaint status & remarks
   async updateStatus(id, statusData) {
-    const res = await fetch(`${API_BASE_URL}/${id}/status`, {
+    const res = await fetch(`${COMPLAINTS_URL}/${id}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +58,7 @@ export const api = {
 
   // Admin: Delete complaint
   async deleteComplaint(id) {
-    const res = await fetch(`${API_BASE_URL}/${id}`, {
+    const res = await fetch(`${COMPLAINTS_URL}/${id}`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Failed to delete complaint');
@@ -64,15 +67,35 @@ export const api = {
 
   // Fetch dashboard stats
   async getStats() {
-    const res = await fetch(`${API_BASE_URL}/stats`);
+    const res = await fetch(`${COMPLAINTS_URL}/stats`);
     if (!res.ok) throw new Error('Failed to fetch statistics');
     return res.json();
   },
 
   // Track complaints by student roll number
   async getByStudentRollNo(rollNo) {
-    const res = await fetch(`${API_BASE_URL}/student/${encodeURIComponent(rollNo)}`);
+    const res = await fetch(`${COMPLAINTS_URL}/student/${encodeURIComponent(rollNo)}`);
     if (!res.ok) throw new Error('Failed to fetch student complaints');
+    return res.json();
+  },
+
+  // AI-Assisted Prediction (Category & Urgency Recommendation)
+  async predictAi(payload) {
+    const res = await fetch(`${AI_URL}/predict`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('AI analysis service currently unavailable');
+    return res.json();
+  },
+
+  // AI Model Training & Evaluation Metrics
+  async getAiMetrics() {
+    const res = await fetch(`${AI_URL}/metrics`);
+    if (!res.ok) throw new Error('Failed to load AI model metrics');
     return res.json();
   }
 };
